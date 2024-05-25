@@ -58,11 +58,14 @@ function App() {
   };
 
   // Delete Button Component
-  // Changed from a class to a function
-  function DeleteButton({ id, deleteTodo }) {
-    return (
-        <button className="deleteButton" onClick={() => deleteTodo(id)}><img src={require("./Assets/trashcan.png")} alt="Trash Can" /></button>
-    )
+  // Modified this to be a class instead of a function. In the homework video, you told us to use at least one class component
+  class DeleteButton extends React.Component {
+    render() {
+      return (
+        // Combining button and trash can image together. Taken from https://stackoverflow.com/questions/36113367/how-to-make-image-buttons-in-jsx
+        <button className="deleteButton" onClick={() => this.props.deleteTodo(this.props.id)}><img src={require("./Assets/trashcan.png")} alt="Trash Can" /></button>
+      );
+    }
   };
 
   // Updates boolean value when the checkbox is clicked, but only at the specified property
