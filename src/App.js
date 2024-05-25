@@ -12,6 +12,8 @@ function App() {
   const [bgcolor, setBgColor] = useState("");
   const [txtcolor, setTxtColor] = useState("");
   const [todos, setTodos] = useState([]);
+  // Declaring the deletion setTimeout to a global variable so it can be accessed and canceled once a task list item is unselected
+  var deletionTimer;
 
   // Got this handy chunk of code for changing color based on input from https://stackoverflow.com/questions/73579784/how-to-change-the-colour-of-button-according-to-number-of-characters-in-input-fi
   // Modified that code to change the text color, determine length differently, and to reset colors upon reaching 0 characters again
@@ -58,21 +60,39 @@ function App() {
   };
 
   // Delete Button Component
-  // Modified this to be a class instead of a function. In the homework video, you told us to use at least one class component
-  class DeleteButton extends React.Component {
-    render() {
-      return (
-        // Combining button and trash can image together. Taken from https://stackoverflow.com/questions/36113367/how-to-make-image-buttons-in-jsx
-        <button className="deleteButton" onClick={() => this.props.deleteTodo(this.props.id)}><img src={require("./Assets/trashcan.png")} alt="Trash Can" /></button>
-      );
-    }
+  // Changed from a class to a function
+  function DeleteButton({ id, deleteTodo }) {
+    return (
+        <button className="deleteButton" onClick={() => deleteTodo(id)}><img src={require("./Assets/trashcan.png")} alt="Trash Can" /></button>
+    )
   };
 
   // Updates boolean value when the checkbox is clicked, but only at the specified property
   const handleCheck = (index) => {
-    setTodos(todos.map((todo, i) =>
-      i === index ? { ...todo, checked: !todo.checked } : todo
-    ));
+    setTodos(todos.map((todo, i) => {
+      // Checking for only the passed item
+      if (i === index) {
+        // Checking if the item was checked. if not, then it is going to become checked
+        if (todo.checked === false) {
+          // Setting up 4 sec delay for deletion
+          // Figured out how to use this function from https://developer.mozilla.org/en-US/docs/Web/API/setTimeout
+          // Having it setup the function to be executed after 4sec instead of looking at the result after that time. Took me a while to remember what I did wrong here (was just using setTimeout(deleteTodo(index, 4000)))
+          deletionTimer = setTimeout(() => deleteTodo(index), 4000);
+          return { ...todo, checked: !todo.checked };
+        }
+        // Prevent deletion of item that is being unchecked
+        else {
+          // Function usage taken from https://developer.mozilla.org/en-US/docs/Web/API/clearTimeout
+          // Thought this would work correctly, but it doesnt?? No clue what I am doing wrong here
+          clearTimeout(deletionTimer);
+          return { ...todo, checked: !todo.checked };
+        }
+      }
+      // Default. Shouldn't ever occur (since it should only pass an index that exists in the array), but the terminal yelled at me until I added this
+      else {
+        return todo;
+      }
+    }))
   };
 
   return (
@@ -96,16 +116,22 @@ function App() {
         {todos.length === 0 && <img className="noTask" src={require("./Assets/notasks.png")} alt="No Tasks" />}
         {/* Mapping over the todos array, then assigning an index to each entry. The index allows us to cross out or delete each entry with the checkbox and delete button respectively*/}
         {/* Mapping and index code from https://stackoverflow.com/questions/36440835/react-using-map-with-index */}
-        {todos.map((todoValue, index) => (
-          <div key={index} className="divList">
-            {/* Took a lot of tinkering around, but I got the checkbox trigger to work successfully thanks to https://www.tutorialspoint.com/how-to-use-checkboxes-in-reactjs */}
-            <input type="checkbox" checked={todoValue.checked} onChange={() => handleCheck(index)} />
-            {/* If the checkbox is checked, then the list item is slashed through */}
-            {/* By far the hardest part of the assignment for me. Took so long to get this slashthrough working correctly */}
-            {todoValue.checked ? <h3><s>{todoValue.text}</s></h3> : (<h3>{todoValue.text}</h3>)}
-            <DeleteButton id={index} deleteTodo={deleteTodo} />
-          </div>
-        ))}
+        {/* Code for reversing a task list taken from https://stackoverflow.com/questions/54989171/how-can-i-reverse-an-array-using-map specifically the slice and reverse methods */}
+        {todos.slice(0).reverse().map((todoValue, index) => {
+          /* This neat piece of code allows me to update the position of the delete button and checkbox with a reversed array
+             Taken from https://stackoverflow.com/questions/40546296/find-original-index-of-reversed-array */
+          const correctIndex = todos.length - index - 1;
+          return (
+            <div key={correctIndex} className="divList">
+              {/* Took a lot of tinkering around, but I got the checkbox trigger to work successfully thanks to https://www.tutorialspoint.com/how-to-use-checkboxes-in-reactjs */}
+              <input type="checkbox" checked={todoValue.checked} onChange={() => handleCheck(correctIndex)} />
+              {/* If the checkbox is checked, then the list item is slashed through */}
+              {/* By far the hardest part of the assignment for me. Took so long to get this slashthrough working correctly */}
+              {todoValue.checked ? <h3><s>{todoValue.text}</s></h3> : (<h3>{todoValue.text}</h3>)}
+              <DeleteButton id={correctIndex} deleteTodo={deleteTodo} />
+            </div>
+          );
+        })}
       </ul>
     </div>
   );
